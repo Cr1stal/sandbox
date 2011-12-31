@@ -1,0 +1,1 @@
+Parallel to hbase-book, but is written in Scala and uses Cassandra as database.
