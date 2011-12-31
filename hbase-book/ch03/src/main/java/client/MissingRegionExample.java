@@ -109,7 +109,7 @@ public class MissingRegionExample {
 
     System.out.println("\nAssigning region: " + location.getRegionInfo().
       getRegionNameAsString());
-    admin.assign(location.getRegionInfo().getRegionName(), false); // co MissingRegionExample-9-Open Open the region, which will make the blocked get() in the thread wake up and print its waiting time.
+    admin.assign(location.getRegionInfo().getRegionName()); // co MissingRegionExample-9-Open Open the region, which will make the blocked get() in the thread wake up and print its waiting time.
 
     try {
       System.out.println("\nSleeping another 3secs in main()...");
