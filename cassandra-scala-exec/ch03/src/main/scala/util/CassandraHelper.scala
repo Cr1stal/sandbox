@@ -2,15 +2,19 @@ package util
 
 import me.prettyprint.hector.api.Keyspace
 import me.prettyprint.hector.api.factory.HFactory
+import me.prettyprint.hector.api.ddl.KeyspaceDefinition
 import me.prettyprint.cassandra.model.HColumnImpl
 import me.prettyprint.cassandra.serializers.StringSerializer
 import me.prettyprint.cassandra.service.CassandraHostConfigurator
 import me.prettyprint.cassandra.service.template.ThriftColumnFamilyTemplate
 import org.apache.log4j.Logger
+import scala.collection.JavaConversions._
 import scalaz._
 import Scalaz._
 
 class CassandraHelper(clusterName : String, conf : CassandraHostConfigurator) {
+
+    import CassandraHelper._
 
     private val cluster = HFactory.getOrCreateCluster(clusterName, conf)
     private val LOG = Logger.getLogger("CassandraHelper")
@@ -36,11 +40,7 @@ class CassandraHelper(clusterName : String, conf : CassandraHostConfigurator) {
         }
     }
 
-    // Fixit: define an implicit conversion and eliminate this function definition
-    def addKeyspace(kspName : String) : String = {
-        val kspDef = HFactory.createKeyspaceDefinition(kspName)
-        return cluster.addKeyspace(kspDef, true)
-    }
+    def addKeyspace = cluster.addKeyspace(_ : String, true)
 
     def addColumnFamily(kspName : String, colFamilyName : String) : String = {
         val colFamily = HFactory.createColumnFamilyDefinition(kspName, colFamilyName)
@@ -65,8 +65,8 @@ class CassandraHelper(clusterName : String, conf : CassandraHostConfigurator) {
         }
     }
 
-    // Fixit: also dump all versions of data, not just latest one
-    // Fixit: use String.join or the like instead of ugly string concatenation
+    // Jonathan Ellis: "No, we're not planning to add support for retrieving old versions."
+    // Also see CASSANDRA-580, CASSANDRA-1070 and CASSANDRA-1072
     def dump(kspName : String, colFName : String, rowKeys : List[String]) : Unit = {
         val keyspace = createKeyspace(kspName)
         val template = new ThriftColumnFamilyTemplate(keyspace, colFName,
@@ -75,10 +75,8 @@ class CassandraHelper(clusterName : String, conf : CassandraHostConfigurator) {
         for (rowKey <- rowKeys) {
             LOG.info("****** Row: " + rowKey)
             val res = template.queryColumns(rowKey)
-            var line = "******\t "
-            for (colName <- res.getColumnNames())
-                line += colName + " -> " + res.getString(colName) + ", "
-            LOG.info(line)
+            val line = res.getColumnNames().map {(c) => c + "@" + res.getColumn(c).getClock() + " -> " + res.getString(c)}
+            LOG.info(line.mkString("******\t ", ", ", ""))
         }
     }
 
@@ -87,7 +85,13 @@ class CassandraHelper(clusterName : String, conf : CassandraHostConfigurator) {
     }
 }
 
-// scaladoc: http://scalaz.github.com/scalaz/scalaz-2.9.1-6.0.2/doc/index.html#scalaz.Resources
 object CassandraHelper {
-    implicit val helperResource: Resource[CassandraHelper] = resource(h => h.shutdown)
+    // scaladoc: http://scalaz.github.com/scalaz/scalaz-2.9.1-6.0.2/doc/index.html#scalaz.Resources
+    implicit def CassandraResource : Resource[CassandraHelper] = resource(c => c.shutdown)
+
+    // 1. As a rule of thumb, always define explicit result type for an implicit conversion
+    // Martin Odersky: "An implicit conversion without explicit result type is visible only in the text following its own definition. That way, we avoid the cyclic reference errors."
+    // also, http://stackoverflow.com/questions/2731185/why-does-this-explicit-call-of-a-scala-method-allow-it-to-be-implicitly-resolved
+    // 2. Martin Odersky: "It's fair to say that point-free style is not idiomatic Scala." See http://scala-lang.org/node/9371
+    implicit def string2keyspacedefinition(k : String) : KeyspaceDefinition = HFactory.createKeyspaceDefinition(k)
 }
