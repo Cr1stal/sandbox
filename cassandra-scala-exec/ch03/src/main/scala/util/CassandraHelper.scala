@@ -139,12 +139,11 @@ class CassandraHelper(clusterName : String, conf : CassandraHostConfigurator) {
         val finish = new Composite()
         sliceQuery.setColumnFamily(colFName).setKeys((startRow to endRow).map("row"+_))
         start.addComponent("a", StringSerializer.get())
-        start.addComponent(1:java.lang.Integer, IntegerSerializer.get())
+             .addComponent(1:java.lang.Integer, IntegerSerializer.get())
         finish.addComponent(Char.MaxValue.toString(), StringSerializer.get())
-        finish.addComponent(Int.MaxValue:java.lang.Integer, IntegerSerializer.get())
+              .addComponent(Int.MaxValue:java.lang.Integer, IntegerSerializer.get())
         sliceQuery.setRange(start, finish, false, 100)
-
-        sliceQuery.execute()
+                  .execute()
     }
 
     def scan(kspName: String, colFName: String, startRow: Int, endRow: Int, cols: List[(String, Int)]) = {
@@ -155,9 +154,12 @@ class CassandraHelper(clusterName : String, conf : CassandraHostConfigurator) {
         // Hmm, MultigetSliceQuery doesn't have setColumnNames(Collection<SN> columnNames)
         // only setColumnNames(SN... columnNames)
         // AbstractSliceQuery have both. WTF?!
-        // Also note the way pass a Scala collection to Java verargs:
+        // Also note the way pass a Scala collection to Java varargs:
         //      collection.toArray._*
         // not pretty...
+        // Third, the method chaining of AbstractComposite.addComponent is broken too,
+        // (new Composite()).addComponent will give back an AbstractComposite
+        // instead of Composite!
         sliceQuery.setColumnNames(cols.map(c => {
                 val comp = new Composite()
                 comp.addComponent(c._1, StringSerializer.get())

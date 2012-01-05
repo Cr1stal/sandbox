@@ -13,7 +13,7 @@ object GetExample extends App {
     val LOG = Logger.getLogger("GetExample")
 
     // fixit: cassandra hosts configuration should be externalized
-    val conf = new CassandraHostConfigurator("192.168.1.6:9160")
+    val conf = new CassandraHostConfigurator("192.168.1.5:9160")
 
     withResource (
         new CassandraHelper(conf),
