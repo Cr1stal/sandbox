@@ -1,0 +1,2 @@
+#!/bin/bash
+erl -pa ebin -run sophie main $1 -run init stop -noshell
