@@ -16,8 +16,8 @@ read_input(Filename) ->
     {ok, Bin} = file:read_file(Filename),
     [W | C] = string:tokens(binary_to_list(Bin), "\r\n"),
     CC = lists:map(fun(E) ->
-                        [_, Cost, Weight] = string:tokens(E, "\s\t"),
-                        {list_to_integer(Cost), list_to_integer(Weight)}
+                        [_, Weight, Cost] = string:tokens(E, "\s\t"),
+                        {list_to_integer(Weight), list_to_integer(Cost)}
                     end, C),
     Weight = list_to_integer(W),
     %% reduce by gcd of all weight can help
