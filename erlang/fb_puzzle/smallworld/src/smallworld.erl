@@ -66,10 +66,9 @@ find_nearest(Target, Root, Left, Right, Nearest, Depth) ->
     {Near, Away} = select_nearer_by_axis(Target, Root, Left, Right, Depth),
     NN = find_nearest(Target, zbintree:get(Near), zbintree:left(Near), zbintree:right(Near), N, Depth+1),
     %% may need to check the away side too
-    AwayRoot = zbintree:get(Away),
-    case (length(NN) < 4) or (distance_axis(Target, AwayRoot, Depth) < distance(Target, lists:last(NN))) of
+    case (length(NN) < 4) or (distance_axis(Target, Root, Depth) < distance(Target, lists:last(NN))) of
         true ->
-            find_nearest(Target, AwayRoot, zbintree:left(Away), zbintree:right(Away), NN, Depth+1);
+            find_nearest(Target, zbintree:get(Away), zbintree:left(Away), zbintree:right(Away), NN, Depth+1);
         false ->
             NN
     end.
